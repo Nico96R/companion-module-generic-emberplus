@@ -9,6 +9,9 @@ import { EmberClient } from 'emberplus-connection' // note - emberplus-conn is i
  */
 class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
   private emberClient: EmberClient
+  CHOICES_INPUTS: number[]
+  CHOICES_OUTPUTS: number[]
+
 
   /**
    * Create an instance of an EmberPlus module.
@@ -17,6 +20,13 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
     super(system, id, config)
 
     this.emberClient = new EmberClient(config.host || '', config.port)
+
+    this.CHOICES_INPUTS = []
+    this.CHOICES_OUTPUTS = []
+    this.config.selectedSource = -1
+    this.config.selectedDestination = -1
+
+    this.config.matrices = config.matricesString.split(',')
 
     this.updateCompanionBits()
   }
@@ -46,6 +56,8 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
 
     this.emberClient.discard()
     this.emberClient.removeAllListeners()
+    this.config.matrices = config.matricesString.split(',')
+    this.log('debug', 'Entered matrices: ' + config.matricesString)
 
     this.setupEmberConnection()
   }

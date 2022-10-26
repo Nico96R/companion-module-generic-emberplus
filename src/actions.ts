@@ -17,7 +17,10 @@ export enum ActionId {
   SetValueBoolean = 'setValueBoolean',
   MatrixConnect = 'matrixConnect',
   MatrixDisconnect = 'matrixDisconnect',
-  MatrixSetConnection = 'matrixSetConnection'
+  MatrixSetConnection = 'matrixSetConnection',
+  Take = 'take',
+  SetSelectedSource = 'setSelectedSource',
+  SetSelectedTarget = 'setSelectedTarget'
 }
 
 type CompanionActionWithCallback = SetRequired<CompanionAction, 'callback'>
@@ -69,6 +72,24 @@ const setValue = (self: InstanceSkel<EmberPlusConfig>, emberClient: EmberClient,
   })
 }
 
+const doMatrixActionFunction = function (
+  self: InstanceSkel<EmberPlusConfig>,
+  emberClient: EmberClient
+) {
+  self.debug('Get node ' + self.config.selectedMatrix)
+  emberClient.getElementByPath(self.config.selectedMatrix).then(node => {
+    // TODO - do we handle not found?
+    if (node && node.contents.type === EmberModel.ElementType.Matrix) {
+      self.debug('Got node on ' + self.config.selectedMatrix)
+      const target = self.config.selectedDestination
+      const sources = [self.config.selectedSource]
+      emberClient.matrixConnect(node as EmberModel.NumberedTreeNode<EmberModel.Matrix>, target, sources)
+    } else {
+      self.log('warn', 'Matrix ' + self.config.selectedMatrix + ' not found or not a parameter')
+    }
+  })
+}
+
 const doMatrixAction = (
   self: InstanceSkel<EmberPlusConfig>,
   emberClient: EmberClient,
@@ -89,6 +110,40 @@ const doMatrixAction = (
       self.log('warn', 'Matrix ' + action.options['path'] + ' not found or not a parameter')
     }
   })
+}
+
+const doTake = (
+  self: InstanceSkel<EmberPlusConfig>,
+  emberClient: EmberClient
+) => (action: CompanionActionEvent): void => {
+  if (self.config.selectedDestination != -1 && self.config.selectedSource != -1) {
+    self.config.selectedMatrix = self.config.matrices[Number(action.options['matrix'])]
+    doMatrixActionFunction(self, emberClient)
+  } else {
+    self.log('debug', 'TAKE went wrong.')
+  }
+  self.log('debug', 'TAKE: selectedDest: ' + self.config.selectedDestination + ' selectedSource: ' + self.config.selectedSource + ' on path ' + self.config.selectedMatrix)
+
+}
+
+const setSelectedSource = (
+  self: InstanceSkel<EmberPlusConfig>
+) => (action: CompanionActionEvent): void => {
+  if (action.options['source'] != -1) {
+    self.config.selectedSource = Number(action.options['source'])
+  }
+
+  self.log('debug', 'setSelectedSource: ' + self.config.selectedSource)
+}
+
+const setSelectedTarget = (
+  self: InstanceSkel<EmberPlusConfig>
+) => (action: CompanionActionEvent): void => {
+  if (action.options['source'] != -1) {
+    self.config.selectedDestination = Number(action.options['target'])
+  }
+
+  self.log('debug', 'setSelectedTarget: ' + self.config.selectedDestination)
 }
 
 export function GetActionsList(self: InstanceSkel<EmberPlusConfig>, emberClient: EmberClient): CompanionActions {
@@ -166,6 +221,49 @@ export function GetActionsList(self: InstanceSkel<EmberPlusConfig>, emberClient:
       label: 'Matrix Set Connection',
       options: [...matrixInputs],
       callback: doMatrixAction(self, emberClient, (...args) => emberClient.matrixSetConnection(...args))
+    },
+    [ActionId.Take]: {
+      label: 'Take',
+      options: [{
+        type: 'number',
+        label: 'Matrix Number',
+        id: 'matrix',
+        required: true,
+        min: 0,
+        max: 0xffffffff,
+        default: 0
+      }],
+      callback: doTake(self, emberClient)
+    },
+    [ActionId.SetSelectedSource]: {
+      label: 'Set Selected Source',
+      options: [
+        {
+          type: 'number',
+          label: 'Value',
+          id: 'source',
+          required: true,
+          min: -0,
+          max: 0xffffffff,
+          default: 0
+        }
+      ],
+      callback: setSelectedSource(self)
+    },
+    [ActionId.SetSelectedTarget]: {
+      label: 'Set Selected Target',
+      options: [
+        {
+          type: 'number',
+          label: 'Value',
+          id: 'target',
+          required: true,
+          min: -0,
+          max: 0xffffffff,
+          default: 0
+        }
+      ],
+      callback: setSelectedTarget(self)
     }
   }
 

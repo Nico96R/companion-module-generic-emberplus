@@ -6,6 +6,14 @@ export const portDefault = 9000
 export interface EmberPlusConfig {
   host?: string
   port?: number
+  take?: boolean
+  inputCount: number
+  outputCount: number
+  selectedSource: number
+  selectedDestination: number
+  selectedMatrix: string
+  matrices: string[]
+  matricesString: string
 }
 
 export function GetConfigFields(self: InstanceSkel<EmberPlusConfig>): SomeCompanionConfigField[] {
@@ -28,6 +36,42 @@ export function GetConfigFields(self: InstanceSkel<EmberPlusConfig>): SomeCompan
       max: 0xffff,
       step: 1,
       default: portDefault
+    },
+    {
+      type: 'checkbox',
+      id: 'take',
+      label: 'Enable Take? (XY only)',
+      width: 6,
+      default: false,
+    },
+    {
+      type: 'textinput',
+      id: 'matricesString',
+      label: 'Paths to matrices',
+      tooltip: 'Please seperate by comma',
+      width: 12
+    },
+    {
+      type: 'number',
+      id: 'inputCount',
+      label: 'Number of Inputs',
+      tooltip: 'Used, when there is no connection',
+      width: 6,
+      min: 1,
+      max: 65536,
+      default: 12,
+      required: true
+    },
+    {
+      type: 'number',
+      id: 'outputCount',
+      label: 'Number of Inputs',
+      tooltip: 'Used, when there is no connection',
+      width: 6,
+      min: 1,
+      max: 65536,
+      default: 12,
+      required: true
     }
   ]
 }
