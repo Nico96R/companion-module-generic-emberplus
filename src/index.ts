@@ -3,15 +3,16 @@ import { CompanionConfigField, CompanionSystem } from '../../../instance_skel_ty
 import { GetActionsList } from './actions'
 import { EmberPlusConfig, GetConfigFields } from './config'
 import { EmberClient } from 'emberplus-connection' // note - emberplus-conn is in parent repo, not sure if it needs to be defined as dependency
+import { setAllVariables } from './variables'
+import { FieldFlags } from 'emberplus-connection/dist/model/Command'
 
 /**
- * Companion instance class for an generic ember+ Provider.
+ * Companion instance class for a generic ember+ Provider.
  */
 class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
   private emberClient: EmberClient
   CHOICES_INPUTS: number[]
   CHOICES_OUTPUTS: number[]
-
 
   /**
    * Create an instance of an EmberPlus module.
@@ -25,8 +26,9 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
     this.CHOICES_OUTPUTS = []
     this.config.selectedSource = -1
     this.config.selectedDestination = -1
+    this.config.connections = new Array(0)
 
-    this.config.matrices = config.matricesString.split(',')
+    if (this.config.matricesString) this.config.matrices = config.matricesString.split(',')
 
     this.updateCompanionBits()
   }
@@ -57,6 +59,7 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
     this.emberClient.discard()
     this.emberClient.removeAllListeners()
     this.config.matrices = config.matricesString.split(',')
+    this.saveConfig()
     this.log('debug', 'Entered matrices: ' + config.matricesString)
 
     this.setupEmberConnection()
@@ -83,6 +86,15 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
     this.setActions(GetActionsList(this, this.client))
   }
 
+  /**
+   * Get Ember Values
+   * @private
+   * This method asks the provider for specific values when the client is correctly connected.
+   */
+  private getEmberValues(): void {
+    setAllVariables(this, this.client)
+  }
+
   private get client(): EmberClient {
     return this.emberClient
   }
@@ -96,7 +108,7 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
       this.log('error', 'Error ' + e)
     })
     this.emberClient.on('connected', () => {
-      this.emberClient.getDirectory(this.emberClient.tree) // get root
+      this.emberClient.getDirectory(this.emberClient.tree, FieldFlags.All, () => this.getEmberValues()) // get root
       this.status(this.STATUS_OK, 'Connected')
     })
     this.emberClient.on('disconnected', () => {

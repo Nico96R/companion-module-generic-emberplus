@@ -14,6 +14,7 @@ export interface EmberPlusConfig {
   selectedMatrix: string
   matrices: string[]
   matricesString: string
+  connections: number[][]
 }
 
 export function GetConfigFields(self: InstanceSkel<EmberPlusConfig>): SomeCompanionConfigField[] {
@@ -42,14 +43,15 @@ export function GetConfigFields(self: InstanceSkel<EmberPlusConfig>): SomeCompan
       id: 'take',
       label: 'Enable Take? (XY only)',
       width: 6,
-      default: false,
+      default: false
     },
     {
       type: 'textinput',
       id: 'matricesString',
       label: 'Paths to matrices',
       tooltip: 'Please seperate by comma',
-      width: 12
+      width: 12,
+      default: ''
     },
     {
       type: 'number',
