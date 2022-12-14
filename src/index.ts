@@ -29,6 +29,7 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
     if (config.outputCountString) this.config.outputCount = config.outputCountString.split(',').map(Number)
 
     this.updateCompanionBits()
+    this.setupChoices()
   }
 
   // Override base types to make types stricter
@@ -44,6 +45,7 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
   public init(): void {
     this.status(this.STATUS_UNKNOWN)
     this.setupEmberConnection()
+    this.setupChoices()
 
     this.updateCompanionBits()
   }
@@ -54,12 +56,15 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
   public updateConfig(config: EmberPlusConfig): void {
     this.config = config
 
-    this.emberClient.discard()
-    this.emberClient.removeAllListeners()
-    this.config.matrices = config.matricesString.split(',')
-    this.log('debug', 'Entered matrices: ' + config.matricesString)
+    this.emberClient.disconnect().then(() => {
+      if (config.matricesString) {
+        this.config.matrices = config.matricesString.split(',')
+      }
+      this.log('debug', 'Entered matrices: ' + config.matricesString)
 
-    this.setupEmberConnection()
+      this.setupEmberConnection()
+      this.setupChoices()
+    })
   }
 
   /**
@@ -75,6 +80,7 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
    */
   public destroy(): void {
     this.emberClient.discard()
+    this.emberClient.disconnect()
 
     this.debug('destroy', this.id)
   }
@@ -102,7 +108,29 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
     this.emberClient.on('disconnected', () => {
       this.status(this.STATUS_WARNING, 'Reconnecting')
     })
-    this.emberClient.connect()
+    this.emberClient
+      .connect()
+      .then(r => {
+        if (r) {
+          this.log('debug', r.toString())
+        }
+      })
+      .then(() => {
+        this.log('debug', 'emberplus opened socket.')
+      })
+  }
+
+  private setupChoices(): void {
+    if (this.config.selectedSource) {
+      for (let i = 0; i < this.config.selectedSource.length; i++) {
+        this.config.selectedSource[i] = -1
+      }
+    }
+    if (this.config.selectedDestination) {
+      for (let i = 0; i < this.config.selectedDestination.length; i++) {
+        this.config.selectedDestination[i] = -1
+      }
+    }
   }
 }
 
