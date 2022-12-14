@@ -1,12 +1,10 @@
 import InstanceSkel = require('../../../instance_skel')
 import {
-  CompanionAction,
   CompanionActionEvent,
   CompanionActions,
   CompanionInputFieldNumber,
   CompanionInputFieldTextInput
 } from '../../../instance_skel_types'
-import { SetRequired } from 'type-fest'
 import { EmberClient, Model as EmberModel } from 'emberplus-connection'
 import { EmberPlusConfig } from './config'
 
@@ -22,8 +20,6 @@ export enum ActionId {
   SetSelectedSource = 'setSelectedSource',
   SetSelectedTarget = 'setSelectedTarget'
 }
-
-type CompanionActionWithCallback = SetRequired<CompanionAction, 'callback'>
 
 const pathInput: CompanionInputFieldTextInput = {
   type: 'textinput',
@@ -72,22 +68,33 @@ const setValue = (self: InstanceSkel<EmberPlusConfig>, emberClient: EmberClient,
   })
 }
 
-const doMatrixActionFunction = function (
+const doMatrixActionFunction = function(
   self: InstanceSkel<EmberPlusConfig>,
-  emberClient: EmberClient
+  emberClient: EmberClient,
+  selMatrix: number
 ) {
-  self.debug('Get node ' + self.config.selectedMatrix)
-  emberClient.getElementByPath(self.config.selectedMatrix).then(node => {
-    // TODO - do we handle not found?
-    if (node && node.contents.type === EmberModel.ElementType.Matrix) {
-      self.debug('Got node on ' + self.config.selectedMatrix)
-      const target = self.config.selectedDestination
-      const sources = [self.config.selectedSource]
-      emberClient.matrixConnect(node as EmberModel.NumberedTreeNode<EmberModel.Matrix>, target, sources)
-    } else {
-      self.log('warn', 'Matrix ' + self.config.selectedMatrix + ' not found or not a parameter')
-    }
-  })
+  if (
+    self.config.selectedSource &&
+    self.config.selectedDestination &&
+    self.config.matrices &&
+    self.config.selectedSource[selMatrix] != -1 &&
+    self.config.selectedDestination[selMatrix] != -1
+  ) {
+    self.debug('Get node ' + self.config.matrices[selMatrix])
+    emberClient.getElementByPath(self.config.matrices[selMatrix]).then(node => {
+      // TODO - do we handle not found?
+      if (node && node.contents.type === EmberModel.ElementType.Matrix) {
+        self.debug('Got node on ' + selMatrix)
+        // @ts-ignore
+        const target = self.config.selectedDestination[selMatrix]
+        // @ts-ignore
+        const sources = [self.config.selectedSource[selMatrix]]
+        emberClient.matrixConnect(node as EmberModel.NumberedTreeNode<EmberModel.Matrix>, target, sources)
+      } else {
+        self.log('warn', 'Matrix ' + selMatrix + ' not found or not a parameter')
+      }
+    })
+  }
 }
 
 const doMatrixAction = (
@@ -112,42 +119,51 @@ const doMatrixAction = (
   })
 }
 
-const doTake = (
-  self: InstanceSkel<EmberPlusConfig>,
-  emberClient: EmberClient
-) => (action: CompanionActionEvent): void => {
-  if (self.config.selectedDestination != -1 && self.config.selectedSource != -1) {
-    self.config.selectedMatrix = self.config.matrices[Number(action.options['matrix'])]
-    doMatrixActionFunction(self, emberClient)
-  } else {
-    self.log('debug', 'TAKE went wrong.')
+const doTake = (self: InstanceSkel<EmberPlusConfig>, emberClient: EmberClient) => (
+  action: CompanionActionEvent
+): void => {
+  if (self.config.selectedDestination && self.config.selectedSource && self.config.matrices) {
+    if (
+      self.config.selectedDestination[Number(action.options['matrix'])] != -1 &&
+      self.config.selectedSource[Number(action.options['matrix'])] != -1
+    ) {
+      doMatrixActionFunction(self, emberClient, Number(action.options['matrix']))
+    } else {
+      self.log('debug', 'TAKE went wrong.')
+    }
+    self.log(
+      'debug',
+      'TAKE: selectedDest: ' +
+        self.config.selectedDestination[Number(action.options['matrix'])] +
+        ' selectedSource: ' +
+        self.config.selectedSource[Number(action.options['matrix'])] +
+        ' on matrix ' +
+        Number(action.options['matrix'])
+    )
   }
-  self.log('debug', 'TAKE: selectedDest: ' + self.config.selectedDestination + ' selectedSource: ' + self.config.selectedSource + ' on path ' + self.config.selectedMatrix)
-
 }
 
-const setSelectedSource = (
-  self: InstanceSkel<EmberPlusConfig>
-) => (action: CompanionActionEvent): void => {
-  if (action.options['source'] != -1) {
-    self.config.selectedSource = Number(action.options['source'])
+const setSelectedSource = (self: InstanceSkel<EmberPlusConfig>, emberClient: EmberClient) => (
+  action: CompanionActionEvent
+): void => {
+  if (action.options['source'] != -1 && action.options['matrix'] != -1 && self.config.selectedSource) {
+    self.config.selectedSource[Number(action.options['matrix'])] = Number(action.options['source'])
   }
-
-  self.log('debug', 'setSelectedSource: ' + self.config.selectedSource)
+  self.log('debug', 'Take is: ' + self.config.take)
+  if (self.config.take) doMatrixActionFunction(self, emberClient, Number(action.options['matrix']))
+  self.log('debug', 'setSelectedSource: ' + action.options['source'] + ' on Matrix: ' + action.options['matrix'])
 }
 
-const setSelectedTarget = (
-  self: InstanceSkel<EmberPlusConfig>
-) => (action: CompanionActionEvent): void => {
-  if (action.options['source'] != -1) {
-    self.config.selectedDestination = Number(action.options['target'])
+const setSelectedTarget = (self: InstanceSkel<EmberPlusConfig>) => (action: CompanionActionEvent): void => {
+  if (action.options['target'] != -1 && action.options['matrix'] != -1 && self.config.selectedDestination) {
+    self.config.selectedDestination[Number(action.options['matrix'])] = Number(action.options['target'])
   }
 
-  self.log('debug', 'setSelectedTarget: ' + self.config.selectedDestination)
+  self.log('debug', 'setSelectedTarget: ' + action.options['target'] + ' on Matrix: ' + action.options['matrix'])
 }
 
 export function GetActionsList(self: InstanceSkel<EmberPlusConfig>, emberClient: EmberClient): CompanionActions {
-  const actions: { [id in ActionId]: CompanionActionWithCallback | undefined } = {
+  return {
     [ActionId.SetValueInt]: {
       label: 'Set Value Integer',
       options: [
@@ -224,20 +240,31 @@ export function GetActionsList(self: InstanceSkel<EmberPlusConfig>, emberClient:
     },
     [ActionId.Take]: {
       label: 'Take',
-      options: [{
-        type: 'number',
-        label: 'Matrix Number',
-        id: 'matrix',
-        required: true,
-        min: 0,
-        max: 0xffffffff,
-        default: 0
-      }],
+      options: [
+        {
+          type: 'number',
+          label: 'Matrix Number',
+          id: 'matrix',
+          required: true,
+          min: 0,
+          max: 0xffffffff,
+          default: 0
+        }
+      ],
       callback: doTake(self, emberClient)
     },
     [ActionId.SetSelectedSource]: {
       label: 'Set Selected Source',
       options: [
+        {
+          type: 'number',
+          label: 'Select Matrix Number',
+          id: 'matrix',
+          required: true,
+          min: -0,
+          max: 0xffffffff,
+          default: 0
+        },
         {
           type: 'number',
           label: 'Value',
@@ -248,11 +275,20 @@ export function GetActionsList(self: InstanceSkel<EmberPlusConfig>, emberClient:
           default: 0
         }
       ],
-      callback: setSelectedSource(self)
+      callback: setSelectedSource(self, emberClient)
     },
     [ActionId.SetSelectedTarget]: {
       label: 'Set Selected Target',
       options: [
+        {
+          type: 'number',
+          label: 'Select Matrix Number',
+          id: 'matrix',
+          required: true,
+          min: -0,
+          max: 0xffffffff,
+          default: 0
+        },
         {
           type: 'number',
           label: 'Value',
@@ -266,6 +302,4 @@ export function GetActionsList(self: InstanceSkel<EmberPlusConfig>, emberClient:
       callback: setSelectedTarget(self)
     }
   }
-
-  return actions
 }

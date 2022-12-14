@@ -7,13 +7,14 @@ export interface EmberPlusConfig {
   host?: string
   port?: number
   take?: boolean
-  inputCount: number
-  outputCount: number
-  selectedSource: number
-  selectedDestination: number
-  selectedMatrix: string
-  matrices: string[]
-  matricesString: string
+  inputCount?: number[]
+  outputCount?: number[]
+  selectedSource?: number[]
+  selectedDestination?: number[]
+  matrices?: string[]
+  matricesString?: string
+  inputCountString?: string
+  outputCountString?: string
 }
 
 export function GetConfigFields(self: InstanceSkel<EmberPlusConfig>): SomeCompanionConfigField[] {
@@ -42,7 +43,7 @@ export function GetConfigFields(self: InstanceSkel<EmberPlusConfig>): SomeCompan
       id: 'take',
       label: 'Enable Take? (XY only)',
       width: 6,
-      default: false,
+      default: false
     },
     {
       type: 'textinput',
@@ -52,25 +53,21 @@ export function GetConfigFields(self: InstanceSkel<EmberPlusConfig>): SomeCompan
       width: 12
     },
     {
-      type: 'number',
-      id: 'inputCount',
+      type: 'textinput',
+      id: 'inputCountString',
       label: 'Number of Inputs',
       tooltip: 'Used, when there is no connection',
       width: 6,
-      min: 1,
-      max: 65536,
-      default: 12,
+      default: '',
       required: true
     },
     {
-      type: 'number',
-      id: 'outputCount',
+      type: 'textinput',
+      id: 'outputCountString',
       label: 'Number of Inputs',
       tooltip: 'Used, when there is no connection',
       width: 6,
-      min: 1,
-      max: 65536,
-      default: 12,
+      default: '',
       required: true
     }
   ]
