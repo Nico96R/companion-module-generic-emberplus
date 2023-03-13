@@ -9,8 +9,8 @@ export interface EmberPlusConfig {
   take?: boolean
   inputCount?: number[]
   outputCount?: number[]
-  selectedSource?: number[]
-  selectedDestination?: number[]
+  selectedSource: number[]
+  selectedDestination: number[]
   matrices?: string[]
   matricesString?: string
   inputCountString?: string

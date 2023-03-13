@@ -2,6 +2,7 @@ import InstanceSkel = require('../../../instance_skel')
 import { CompanionConfigField, CompanionSystem } from '../../../instance_skel_types'
 import { GetActionsList } from './actions'
 import { EmberPlusConfig, GetConfigFields } from './config'
+import { GetFeedbacksList } from './feedback'
 import { EmberClient } from 'emberplus-connection' // note - emberplus-conn is in parent repo, not sure if it needs to be defined as dependency
 
 /**
@@ -87,6 +88,7 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
 
   private updateCompanionBits(): void {
     this.setActions(GetActionsList(this, this.client))
+    this.setFeedbackDefinitions(GetFeedbacksList(this, this.client))
   }
 
   private get client(): EmberClient {
@@ -131,6 +133,29 @@ class EmberPlusInstance extends InstanceSkel<EmberPlusConfig> {
         this.config.selectedDestination[i] = -1
       }
     }
+
+    /*
+    if (this.config.inputCount && this.config.matrices) {
+      this.config.CHOICES_INPUTS = []
+      for (let i = 0; i < this.config.inputCount.length; i++) {
+        this.config.CHOICES_INPUTS.push()
+        for (let j = 0; i < this.config.inputCount[i]; i++) {
+          //TODO: durch Matrix Feedback dynamisch befüllen.
+          this.config.CHOICES_INPUTS[i][j] = j
+        }
+      }
+
+    }
+    if (this.config.outputCount && this.config.matrices) {
+      this.config.CHOICES_OUTPUTS = new Array(this.config.outputCount.length)
+      for (let i = 0; i < this.config.outputCount.length; i++) {
+        for (let j = 0; i < this.config.outputCount[i]; i++) {
+          //TODO: durch Matrix Feedback dynamisch befüllen.
+          this.config.CHOICES_OUTPUTS[i].push(j)
+        }
+      }
+    }
+     */
   }
 }
 

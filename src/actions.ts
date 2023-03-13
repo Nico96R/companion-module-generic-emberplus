@@ -7,6 +7,7 @@ import {
 } from '../../../instance_skel_types'
 import { EmberClient, Model as EmberModel } from 'emberplus-connection'
 import { EmberPlusConfig } from './config'
+import { FeedbackId } from './feedback'
 
 export enum ActionId {
   SetValueInt = 'setValueInt',
@@ -151,6 +152,7 @@ const setSelectedSource = (self: InstanceSkel<EmberPlusConfig>, emberClient: Emb
   }
   self.log('debug', 'Take is: ' + self.config.take)
   if (self.config.take) doMatrixActionFunction(self, emberClient, Number(action.options['matrix']))
+  self.checkFeedbacks(FeedbackId.SourceBackgroundSelected)
   self.log('debug', 'setSelectedSource: ' + action.options['source'] + ' on Matrix: ' + action.options['matrix'])
 }
 
@@ -158,7 +160,7 @@ const setSelectedTarget = (self: InstanceSkel<EmberPlusConfig>) => (action: Comp
   if (action.options['target'] != -1 && action.options['matrix'] != -1 && self.config.selectedDestination) {
     self.config.selectedDestination[Number(action.options['matrix'])] = Number(action.options['target'])
   }
-
+  self.checkFeedbacks(FeedbackId.TargetBackgroundSelected)
   self.log('debug', 'setSelectedTarget: ' + action.options['target'] + ' on Matrix: ' + action.options['matrix'])
 }
 
